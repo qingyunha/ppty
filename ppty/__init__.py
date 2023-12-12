@@ -37,6 +37,11 @@ def pty(exeargv, ignoreeof=False, noecho=False,
             tty.tcsetattr(0, tty.TCSANOW, ttyattr)
         os.execvp(exeargv[0], exeargv)
 
+    def handler_winch(signum, frame):
+        winsize = fcntl.ioctl(0, tty.TIOCGWINSZ, 8 * b' ')
+        fcntl.ioctl(fdm, tty.TIOCSWINSZ, winsize)
+    signal.signal(signal.SIGWINCH, handler_winch)
+
     debug("do_loop")
     loop(fdm, ignoreeof)
 
@@ -44,6 +49,12 @@ def pty(exeargv, ignoreeof=False, noecho=False,
     if interactive:
         debug("tty set raw back")
         tty.tcsetattr(0, tty.TCSAFLUSH, ttyattr)
+
+    _, status = os.waitpid(pid, 0)
+    if os.WIFEXITED(status):
+        sys.exit(os.WEXITSTATUS(status))
+    else:
+        sys.exit(2)
 
 
 def loop(fdm, ignoreeof=False):
