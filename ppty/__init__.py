@@ -22,6 +22,7 @@ def pty(exeargv, ignoreeof=False, noecho=False,
         winsize = fcntl.ioctl(0, tty.TIOCGWINSZ, 8 * b' ')
         debug("tty set to raw")
         tty.setraw(0)
+        import subprocess; subprocess.check_call(['stty', 'isig'])
 
     pid, fdm = os.forkpty()
     if pid == 0:
