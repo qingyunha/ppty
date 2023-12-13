@@ -22,7 +22,19 @@ def pty(exeargv, ignoreeof=False, noecho=False,
         winsize = fcntl.ioctl(0, tty.TIOCGWINSZ, 8 * b' ')
         debug("tty set to raw")
         tty.setraw(0)
-        import subprocess; subprocess.check_call(['stty', 'isig'])
+
+        def handle_tstp(signum, frame):
+            tty.tcsetattr(0, tty.TCSANOW, ttyattr)
+            os.kill(os.getpid(), signal.SIGSTOP)
+        signal.signal(signal.SIGTSTP, handle_tstp)
+
+        def handle_cont(signum, frame):
+            tty.setraw(0)
+            import subprocess; subprocess.check_call(['stty', 'isig'])
+        signal.signal(signal.SIGCONT, handle_cont)
+
+        handle_cont(None, None)
+
 
     pid, fdm = os.forkpty()
     if pid == 0:
